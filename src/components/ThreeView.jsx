@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import * as THREE from 'three'
 import OrbitControls from 'orbit-controls-es6'
+import GLTFLoader from 'three-gltf-loader'
 
 import parms from '../parms'
 
@@ -13,9 +14,11 @@ class ThreeCanvas {
     // this.renderer
     // this.obsts = []
     this.raycaster = new THREE.Raycaster()
-    this.mouse=new THREE.Vector2()
-    this.tVect=new THREE.Vector3()
-    this.cLength=0
+    this.mouse = new THREE.Vector2()
+    this.tVect = new THREE.Vector3()
+    this.cLength = 0
+    this.mapViewMode = true
+    this.markNode=null
   }
 
   createCube = (pos = new THREE.Vector3(), material) => {
@@ -24,19 +27,19 @@ class ThreeCanvas {
     cube.position.copy(pos)
     //this.scene.add(cube)
 
-    let dir = new THREE.Vector3( 0, 2, 0 );
+    let dir = new THREE.Vector3(0, 2, 0)
 
     //normalize the direction vector (convert to vector of length 1)
-    dir.normalize();
+    dir.normalize()
 
-    let origin = new THREE.Vector3( 0, 0, 0 );
-    let length = 5;
-    let hex = 0xff0000;
+    let origin = new THREE.Vector3(0, 0, 0)
+    let length = 5
+    let hex = 0xff0000
 
-    let arrowHelper = new THREE.ArrowHelper( dir, origin, length, hex );
-    arrowHelper.name='speedArrow'
+    let arrowHelper = new THREE.ArrowHelper(dir, origin, length, hex)
+    arrowHelper.name = 'speedArrow'
     // console.log(arrowHelper)
-    cube.add( arrowHelper );
+    cube.add(arrowHelper)
     // console.log(cube.getObjectByName('speedArrow'))
     return cube
   }
@@ -141,8 +144,10 @@ class ThreeCanvas {
     scene.add(this.oNode)
     this.targetNode = new THREE.Object3D()
     scene.add(this.targetNode)
-    this.markNode = new THREE.Object3D()
-    scene.add(this.markNode)
+    // this.markNode = new THREE.Object3D()
+    // scene.add(this.markNode)
+    this.editNode = new THREE.Object3D()
+    scene.add(this.editNode)
 
     let gridHelper = new THREE.GridHelper(200, 20)
     this.scene.add(gridHelper)
@@ -172,53 +177,60 @@ class ThreeCanvas {
     this.el.appendChild(this.renderer.domElement)
 
     let geometry = new THREE.SphereGeometry(1, 16, 16)
-    let material = new THREE.MeshBasicMaterial({ color: 0xff8800, transparent:true, opacity:0.7 })
+    let material = new THREE.MeshBasicMaterial({
+      color: 0xff8800,
+      transparent: true,
+      opacity: 0.7
+    })
     // material.wireframe=true
     this.cube = new THREE.Mesh(geometry, material)
     this.cube.position.z = 20
     scene.add(this.cube)
-    this.arrowHelper=new THREE.ArrowHelper(new THREE.Vector3(0,0,0),new THREE.Vector3(0,1,0),10,0xff0000)
+    this.arrowHelper = new THREE.ArrowHelper(
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 1, 0),
+      10,
+      0xff0000
+    )
     scene.add(this.arrowHelper)
     //
     // this.box = cube
 
-    geometry = new THREE.CylinderGeometry( 2, 4, 30, 28, 10 );
+    geometry = new THREE.CylinderGeometry(2, 4, 30, 28, 10)
 
     // material
-      material = new THREE.MeshPhongMaterial( {
-          color: 0xaaaaaa,
-          shading: THREE.FlatShading,
-          polygonOffset: true,
-          polygonOffsetFactor: 1, // positive value pushes polygon further away
-          polygonOffsetUnits: 1
-      } );
+    material = new THREE.MeshPhongMaterial({
+      color: 0xaaaaaa,
+      shading: THREE.FlatShading,
+      polygonOffset: true,
+      polygonOffsetFactor: 1, // positive value pushes polygon further away
+      polygonOffsetUnits: 1
+    })
 
-      // mesh
-      var mesh = new THREE.Mesh( geometry, material );
-      this.targetNode.add( mesh );
+    // mesh
+    var mesh = new THREE.Mesh(geometry, material)
+    // this.targetNode.add( mesh );
 
-      // wireframe - old way
-      /*
+    // wireframe - old way
+    /*
       var helper = new THREE.EdgesHelper( mesh, 0xffffff );
       //var helper = new THREE.WireframeHelper( mesh, 0xffffff ); // alternate
       helper.material.linewidth = 2;
       scene.add( helper );
       */
 
-      // wireframe - new way
-      var geo = new THREE.EdgesGeometry( mesh.geometry ); // or WireframeGeometry
-      var mat = new THREE.LineBasicMaterial( { color: 0x000000, linewidth: 1 } );
-      var wireframe = new THREE.LineSegments( geo, mat );
-      mesh.add( wireframe );
+    // wireframe - new way
+    var geo = new THREE.EdgesGeometry(mesh.geometry) // or WireframeGeometry
+    var mat = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 1 })
+    var wireframe = new THREE.LineSegments(geo, mat)
+    mesh.add(wireframe)
 
-      mesh.position.y=15
-
+    mesh.position.y = 15
 
     // material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
     // var cylinder = new THREE.Mesh( geometry, material );
     // cylinder.position.y=10
     // scene.add( cylinder );
-
 
     camera.position.z = -45
     camera.position.y = 25
@@ -244,17 +256,19 @@ class ThreeCanvas {
     dirLight.position.multiplyScalar(450)
     scene.add(dirLight)
 
-
     // console.log('areas', parms.areas)
     Object.values(parms.areas).forEach(x => this.scene.add(this.createPlane(x)))
 
-    this.materialBlue = new THREE.MeshBasicMaterial({ color: 0x0000ff, wireframe:true })
+    this.materialBlue = new THREE.MeshBasicMaterial({
+      color: 0x0000ff,
+      wireframe: true
+    })
     let materialGreen = new THREE.MeshBasicMaterial({ color: 0x00ff00 })
     materialGreen.wireframe = true
     let materialRed = new THREE.MeshBasicMaterial({ color: 0xff0000 })
     materialRed.wireframe = true
-    this.materialGreen=materialGreen
-    this.materialRed=materialRed
+    this.materialGreen = materialGreen
+    this.materialRed = materialRed
 
     this.divElem = document.createElement('div')
     // this.divElem.style.position = 'relative' //'absolute'
@@ -264,23 +278,69 @@ class ThreeCanvas {
     this.divElem.innerHTML = 'text' //+ i;
     // this.el.appendChild(this.divElem)
 
-    for (let i = 1; i < 500; i++) {
-      let obj = this.createCube(
-        // new THREE.Vector3(Math.random() * 20 - 10, 0, -Math.random() * 20 - 5), i>250?materialGreen:materialRed
-        new THREE.Vector3(0, 0, 0),
-        i > 250 ? materialGreen : materialRed
-      )
+    // Instantiate a loader
+    const loader = new GLTFLoader()
+    // Optional: Provide a DRACOLoader instance to decode compressed mesh data
+    // THREE.DRACOLoader.setDecoderPath( '/examples/js/libs/draco' );
+    // loader.setDRACOLoader( new THREE.DRACOLoader() );
 
-      let divElem = document.createElement('div')
-      divElem.style.position = 'absolute'
-      // divElem.style.zIndex = 3
-      // divElem.style.color = 'white';
-      divElem.innerHTML = 'sphere_'+ i;
-      obj.userData = divElem
-      // this.el.appendChild(divElem)
+    // Load a glTF resource
+    loader.load(
+      // resource URL
+      'map-01.gltf',
+      // called when the resource is loaded
+      gltf => {
+        // this.targetNode.add( gltf.scene );
 
-      this.oNode.add(obj)
-    }
+        gltf.scene.children
+          .filter(x => x.type == 'Mesh')
+          .forEach((x,i) => {
+            this.targetNode.add(x);
+            let divElem = document.createElement('div')
+            divElem.style.position = 'absolute'
+            // // divElem.style.zIndex = 3
+            // // divElem.style.color = 'white';
+            divElem.innerHTML = 'obj_' + i
+            x.userData = divElem
+            this.el.appendChild(divElem)
+          })
+
+        console.log('gltf',gltf,this.targetNode)
+
+        // gltf.animations // Array<THREE.AnimationClip>
+        // gltf.scene // THREE.Scene
+        // gltf.scenes // Array<THREE.Scene>
+        // gltf.cameras // Array<THREE.Camera>
+        // gltf.asset // Object
+      },
+      // called while loading is progressing
+      function(xhr) {
+        console.log(xhr.loaded / xhr.total * 100 + '% loaded')
+      },
+      // called when loading has errors
+      function(error) {
+        console.log('An error happened')
+      }
+    )
+
+    // for (let i = 1; i < 500; i++) {
+    //   let obj = this.createCube(
+    //     // new THREE.Vector3(Math.random() * 20 - 10, 0, -Math.random() * 20 - 5), i>250?materialGreen:materialRed
+    //     new THREE.Vector3(0, 0, 0),
+    //     i > 250 ? materialGreen : materialRed
+    //   )
+    //
+    //   let divElem = document.createElement('div')
+    //   divElem.style.position = 'absolute'
+    //   // divElem.style.zIndex = 3
+    //   // divElem.style.color = 'white';
+    //   divElem.innerHTML = 'sphere_' + i
+    //   obj.userData = divElem
+    //   // this.el.appendChild(divElem)
+    //
+    //   this.oNode.add(obj)
+    // }
+
     // var spritey = this.makeTextSprite(' Hello, ', {
     //   fontsize: 14,
     //   borderColor: { r: 255, g: 0, b: 0, a: 1.0 },
@@ -323,43 +383,70 @@ class ThreeCanvas {
       this.renderer.render(this.scene, camera)
     }
 
-    const animate2=()=>{
+
+    const animate2 = () => {
+      if (this.mapViewMode) {
+
+        this.updateLabels(this.targetNode)
+
+        this.raycaster.setFromCamera(this.mouse, this.camera)
+
+        // calculate objects intersecting the picking ray
+        this.intersects = this.raycaster.intersectObjects(
+          this.targetNode.children
+        )
+
+        if (this.intersects.length > 0) {
+          if (INTERSECTED != this.intersects[0].object) {
+            if (INTERSECTED)
+              INTERSECTED.material.color.setHex(INTERSECTED.currentHex)
+            INTERSECTED = this.intersects[0].object
+            INTERSECTED.currentHex = INTERSECTED.material.color.getHex()
+            INTERSECTED.material.color.setHex(0xff0000)
+            // console.log(this.intersects)
+            // console.log(this.intersects[0].point)
+          }
+        } else {
+          if (INTERSECTED)
+            INTERSECTED.material.color.setHex(INTERSECTED.currentHex)
+          INTERSECTED = null
+        }
+      } else {
+        this.raycaster.setFromCamera(this.mouse, this.camera)
+
+        // calculate objects intersecting the picking ray
+        this.intersects = this.raycaster.intersectObjects(
+          this.targetNode.children
+        )
+
+        if (this.intersects.length > 0) {
+          if (INTERSECTED != this.intersects[0].object) {
+            if (INTERSECTED)
+              INTERSECTED.material.color.setHex(INTERSECTED.currentHex)
+            INTERSECTED = this.intersects[0].object
+            INTERSECTED.currentHex = INTERSECTED.material.color.getHex()
+            INTERSECTED.material.color.setHex(0xff0000)
+            console.log(this.intersects)
+            // console.log(this.intersects[0].point)
+          }
+          this.cube.visible = true
+          this.arrowHelper.visible = true
+
+          this.cube.position.copy(this.intersects[0].point)
+          this.arrowHelper.position.copy(this.intersects[0].point)
+          this.arrowHelper.setDirection(this.intersects[0].face.normal)
+        } else {
+          if (INTERSECTED)
+            INTERSECTED.material.color.setHex(INTERSECTED.currentHex)
+          INTERSECTED = null
+
+          this.cube.visible = false
+          this.arrowHelper.visible = false
+        }
+      }
 
       // console.log(this.scene.children)
       // update the picking ray with the camera and mouse position
-  	   this.raycaster.setFromCamera( this.mouse, this.camera );
-
-      // calculate objects intersecting the picking ray
-      this.intersects = this.raycaster.intersectObjects( this.targetNode.children );
-
-
-
-      if ( this.intersects.length > 0 ) {
-
-  					// if ( INTERSECTED != this.intersects[ 0 ].object ) {
-  					// 	if ( INTERSECTED ) INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
-  					// 	INTERSECTED = this.intersects[ 0 ].object;
-  					// 	INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
-  					// 	INTERSECTED.material.color.setHex( 0xff0000 );
-            //   // console.log(this.intersects)
-            //   // console.log(this.intersects[0].point)
-  					// }
-            this.cube.visible=true
-            this.arrowHelper.visible=true
-
-            this.cube.position.copy(this.intersects[0].point)
-            this.arrowHelper.position.copy(this.intersects[0].point)
-            this.arrowHelper.setDirection(this.intersects[0].face.normal)
-
-  				} else {
-  					if ( INTERSECTED ) INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
-  					INTERSECTED = null;
-
-            this.cube.visible=false
-            this.arrowHelper.visible=false
-  				}
-
-
 
       this.renderer.render(this.scene, camera)
 
@@ -370,49 +457,99 @@ class ThreeCanvas {
     // animate()
     // render()
 
-    window.addEventListener( 'mousemove', this.onMouseMove, false );
-    window.addEventListener( 'resize', this.onWindowResize, false );
-    document.addEventListener( 'mousedown', this.onDocumentMouseDown, false );
+    window.addEventListener('mousemove', this.onMouseMove, false)
+    window.addEventListener('resize', this.onWindowResize, false)
+    document.addEventListener('mousedown', this.onDocumentMouseDown, false)
+    document.addEventListener('keydown', this.onDocumentKeyDown, false)
     animate2()
   }
 
-  onMouseMove=( event )=> {
-  	// calculate mouse position in normalized device coordinates
-  	// (-1 to +1) for both components
-  	this.mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-  	this.mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+  updateLabels=(node)=>{
+
+    console.log(node)
+
+    node.children.forEach(x=>{
+
+  this.divElem = x.userData
+  // this.divElem.style.visibility=this.oNode.children[i + indOffs].visible?'visible':'hidden'
+  this.pt3d.copy(x.position)
+  this.pt2d = this.pt3d.project(this.camera)
+  this.pt2d.x = ((this.pt2d.x + 1) / 2) * this.el.clientWidth
+  let x1 = (this.pt2d.x + 1) / 2 // * this.el.clientWidth;
+  this.pt2d.y = (-(this.pt2d.y - 1) / 2) * this.el.clientHeight
+  this.divElem.style.left = this.pt2d.x + 'px'
+  this.divElem.style.top = this.pt2d.y + 'px'
+  this.divElem.innerHTML =
+    this.pt2d.x.toFixed(2) + ' ' + this.pt2d.y.toFixed(2)
+  })
+}
+
+
+  onMouseMove = event => {
+    // calculate mouse position in normalized device coordinates
+    // (-1 to +1) for both components
+    this.mouse.x = event.clientX / window.innerWidth * 2 - 1
+    this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
     // console.log(this.mouse)
   }
 
-onWindowResize=()=>{
+  onWindowResize = () => {
+    this.camera.aspect = window.innerWidth / window.innerHeight
+    this.camera.updateProjectionMatrix()
 
-      this.camera.aspect = window.innerWidth / window.innerHeight;
-      this.camera.updateProjectionMatrix();
-
-      this.renderer.setSize(this.el.clientWidth, this.el.clientHeight / 1)
+    this.renderer.setSize(this.el.clientWidth, this.el.clientHeight / 1)
   }
 
-  onDocumentMouseDown=()=>{
-    if(this.intersects.length){
-    let geometry = new THREE.SphereGeometry(1, 16, 16)
-    let material = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent:true, opacity:0.4 })
-    // material.wireframe=true
-    let cube = new THREE.Mesh(geometry, material)
-    this.markNode.add(cube)
-    cube.position.copy(this.intersects[0].point)
-    console.log('click!',this.intersects[0].point,cube.position)
-  }
+  onDocumentMouseDown = () => {
+    if (this.mapViewMode) {
+      if (this.intersects.length) {
+        this.targetNode.visible=false
+        this.mapViewMode=false
+        this.currObj=this.intersects[0].object
+        this.editObj=this.intersects[0].object.clone()
+        // this.editObj.position.copy(new THREE.Vector3())
+        this.editObj.position.x=0
+        this.editObj.position.z=0
+        this.markNode=new THREE.Object3D()
+        this.editObj.add(this.markNode)
+        this.editNode.add(this.editObj)
+        console.log('click!', this.intersects,this.editObj)
+      }
+    } else {
+      if (this.intersects.length) {
+        let geometry = new THREE.SphereGeometry(1, 16, 16)
+        let material = new THREE.MeshBasicMaterial({
+          color: 0xff0000,
+          transparent: true,
+          opacity: 0.4
+        })
+        // material.wireframe=true
+        let cube = new THREE.Mesh(geometry, material)
+        this.markNode.add(cube)
+        cube.position.copy(this.intersects[0].point)
+        console.log('click!', this.intersects[0].point, cube.position)
+      }
+    }
   }
 
+  onDocumentKeyDown = event => {
+    console.log(event)
+    if(this.mapViewMode==false){
+      this.currObj.add(this.markNode)
+      this.editNode.remove(this.editObj)
+      this.targetNode.visible=true
+      this.mapViewMode=true
+    }
+  }
 
   update = msg => {
     this.pt3d.copy(this.cube.position)
     this.pt2d = this.pt3d.project(this.camera)
-    this.pt2d.x = ((this.pt2d.x + 1) / 2) * this.el.clientWidth
+    this.pt2d.x = (this.pt2d.x + 1) / 2 * this.el.clientWidth
     let x1 = (this.pt2d.x + 1) / 2 // * this.el.clientWidth;
-    this.pt2d.y = (-(this.pt2d.y - 1) / 2) * this.el.clientHeight
+    this.pt2d.y = -(this.pt2d.y - 1) / 2 * this.el.clientHeight
     // console.log('pt2d',this.pt3d,this.pt2d,this.el.clientWidth,x1,this.cube.position)
-    this.divElem. style.position = 'absolute'
+    this.divElem.style.position = 'absolute'
     // this.divElem.style.position = 'relative'
     this.divElem.style.left = this.pt2d.x + 'px'
     this.divElem.style.top = this.pt2d.y + 'px'
@@ -424,15 +561,16 @@ onWindowResize=()=>{
     let indOffs = 0
     // console.log(msg.bus)
     if (msg.bus == 'can1') {
-      for (let i = 250; i < 500; i++) {this.oNode.children[i].visible = false
+      for (let i = 250; i < 500; i++) {
+        this.oNode.children[i].visible = false
       }
       indOffs = 250
       // return
     } else {
-      for (let i = 1; i < 250; i++) {this.oNode.children[i].visible = false
-      this.oNode.children[i].userData.style.visibility='hidden'
-    }
-
+      for (let i = 1; i < 250; i++) {
+        this.oNode.children[i].visible = false
+        this.oNode.children[i].userData.style.visibility = 'hidden'
+      }
     }
 
     //  this.oNode.children.forEach(x=>x.visible=false)
@@ -448,20 +586,19 @@ onWindowResize=()=>{
 
         // let str = t.Object_ID + ' ' + t.Object_DistLong + ' ' + t.Object_DistLat
 
-        this.tVect.x=t.Object_VrelLat
-        this.tVect.y=0
-        this.tVect.z=t.Object_VrelLong
-        this.cLength=this.tVect.length()
+        this.tVect.x = t.Object_VrelLat
+        this.tVect.y = 0
+        this.tVect.z = t.Object_VrelLong
+        this.cLength = this.tVect.length()
         this.tVect.normalize()
         // console.log(tVect)
 
-        let cObj=this.oNode.children[i + indOffs]
+        let cObj = this.oNode.children[i + indOffs]
 
-        let speedArrow=cObj.getObjectByName('speedArrow')
+        let speedArrow = cObj.getObjectByName('speedArrow')
         // console.log(speedArrow)
         speedArrow.setDirection(this.tVect)
         speedArrow.setLength(this.cLength)
-
 
         // // let str = t.rcs
         let x = 1 * t.Object_DistLat // + offsX
@@ -477,10 +614,9 @@ onWindowResize=()=>{
         else this.oNode.children[i + indOffs].position.x = x
 
         this.oNode.children[i + indOffs].visible = true
-        if(t.colorId=='dangerArea')
-        this.oNode.children[i + indOffs].material=this.materialRed
-        else
-        this.oNode.children[i + indOffs].material=this.materialBlue
+        if (t.colorId == 'dangerArea')
+          this.oNode.children[i + indOffs].material = this.materialRed
+        else this.oNode.children[i + indOffs].material = this.materialBlue
         // if(t.colorId=='dangerArea')
         // console.log(t.colorId)
         // console.log(i)
@@ -528,7 +664,6 @@ class ThreeView extends Component {
 
   // componentWillMount = () => {
   componentDidMount = () => {
-
     //   let v = document.getElementById(this.props.mountId)
     this.tc.init(this.props.mountId)
     //   v.appendChild(this.tc.renderer.domElement)
@@ -545,7 +680,7 @@ class ThreeView extends Component {
   }
 
   render = () => {
-    return <div></div>
+    return <div />
   }
 }
 
