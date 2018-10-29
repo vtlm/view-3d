@@ -287,23 +287,38 @@ class ThreeCanvas {
     // Load a glTF resource
     loader.load(
       // resource URL
-      'map-01.gltf',
+      'Girder_XBox.gltf',
+      // 'bm.gltf',
       // called when the resource is loaded
       gltf => {
         // this.targetNode.add( gltf.scene );
 
         gltf.scene.children
-          .filter(x => x.type == 'Mesh')
+          // .filter(x => x.type == 'Mesh')
+          .filter(x => x.name.includes('Girder'))
           .forEach((x,i) => {
             this.targetNode.add(x);
             let divElem = document.createElement('div')
             divElem.style.position = 'absolute'
             // // divElem.style.zIndex = 3
             // // divElem.style.color = 'white';
-            divElem.innerHTML = 'obj_' + i
+            divElem.innerHTML = 'object_' + i
             x.userData = divElem
             this.el.appendChild(divElem)
           })
+
+          gltf.scene.children
+            .filter(x => x.name.includes('Mesh'))
+            .forEach((x,i) => {
+              this.oNode.add(x);
+              let divElem = document.createElement('div')
+              divElem.style.position = 'absolute'
+              // // divElem.style.zIndex = 3
+              // // divElem.style.color = 'white';
+              divElem.innerHTML = 'object_' + i
+              x.userData = divElem
+              this.el.appendChild(divElem)
+            })
 
         console.log('gltf',gltf,this.targetNode)
 
@@ -387,7 +402,7 @@ class ThreeCanvas {
     const animate2 = () => {
       if (this.mapViewMode) {
 
-        this.updateLabels(this.targetNode)
+        // this.updateLabels(this.targetNode)
 
         this.raycaster.setFromCamera(this.mouse, this.camera)
 
@@ -416,19 +431,19 @@ class ThreeCanvas {
 
         // calculate objects intersecting the picking ray
         this.intersects = this.raycaster.intersectObjects(
-          this.targetNode.children
+          this.editNode.children
         )
 
         if (this.intersects.length > 0) {
-          if (INTERSECTED != this.intersects[0].object) {
-            if (INTERSECTED)
-              INTERSECTED.material.color.setHex(INTERSECTED.currentHex)
-            INTERSECTED = this.intersects[0].object
-            INTERSECTED.currentHex = INTERSECTED.material.color.getHex()
-            INTERSECTED.material.color.setHex(0xff0000)
-            console.log(this.intersects)
-            // console.log(this.intersects[0].point)
-          }
+          // if (INTERSECTED != this.intersects[0].object) {
+          //   if (INTERSECTED)
+          //     INTERSECTED.material.color.setHex(INTERSECTED.currentHex)
+          //   INTERSECTED = this.intersects[0].object
+          //   INTERSECTED.currentHex = INTERSECTED.material.color.getHex()
+          //   INTERSECTED.material.color.setHex(0xff0000)
+          //   console.log(this.intersects)
+          //   // console.log(this.intersects[0].point)
+          // }
           this.cube.visible = true
           this.arrowHelper.visible = true
 
@@ -466,9 +481,10 @@ class ThreeCanvas {
 
   updateLabels=(node)=>{
 
-    console.log(node)
+    // console.log(node)
 
     node.children.forEach(x=>{
+      if(x.visible){
 
   this.divElem = x.userData
   // this.divElem.style.visibility=this.oNode.children[i + indOffs].visible?'visible':'hidden'
@@ -481,6 +497,10 @@ class ThreeCanvas {
   this.divElem.style.top = this.pt2d.y + 'px'
   this.divElem.innerHTML =
     this.pt2d.x.toFixed(2) + ' ' + this.pt2d.y.toFixed(2)
+  }else
+  {
+    x.userData.style.visibility='hidden'
+  }
   })
 }
 
@@ -503,7 +523,9 @@ class ThreeCanvas {
   onDocumentMouseDown = () => {
     if (this.mapViewMode) {
       if (this.intersects.length) {
-        this.targetNode.visible=false
+        // this.targetNode.visible=false
+        this.scene.remove(this.targetNode)
+        this.scene.remove(this.oNode)
         this.mapViewMode=false
         this.currObj=this.intersects[0].object
         this.editObj=this.intersects[0].object.clone()
@@ -537,8 +559,11 @@ class ThreeCanvas {
     if(this.mapViewMode==false){
       this.currObj.add(this.markNode)
       this.editNode.remove(this.editObj)
-      this.targetNode.visible=true
+      this.scene.add(this.targetNode)
+      this.scene.add(this.oNode)
+      // this.targetNode.visible=true
       this.mapViewMode=true
+      document.getElementById('hintLine').innerHTML='text2'
     }
   }
 
@@ -666,6 +691,8 @@ class ThreeView extends Component {
   componentDidMount = () => {
     //   let v = document.getElementById(this.props.mountId)
     this.tc.init(this.props.mountId)
+    document.getElementById('hintLine').innerHTML='text'
+
     //   v.appendChild(this.tc.renderer.domElement)
 
     // let v1 = document.getElementById('main-id-2')
@@ -680,7 +707,21 @@ class ThreeView extends Component {
   }
 
   render = () => {
-    return <div />
+    return (
+      <div id='hintLine' style={{height: "40px",
+                  // display:"inline",
+                  position: "fixed",
+                  bottom:"0%",
+                  width:"100%",
+                  color:"0xffffff",
+                  backgroundColor: "rgba(0,100,0,0.4)",
+                  border:'1px solid #44ffff',
+                  opacity:"1",
+                  textAlign: 'center',
+                  verticalAlign: 'middle',
+                  lineHeight: '40px'
+                              }} />
+    )
   }
 }
 
