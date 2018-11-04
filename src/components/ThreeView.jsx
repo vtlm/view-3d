@@ -3,11 +3,234 @@ import * as THREE from 'three'
 import OrbitControls from 'orbit-controls-es6'
 import GLTFLoader from 'three-gltf-loader'
 
+import { Stitch, AnonymousCredential, RemoteMongoClient } from 'mongodb-stitch-browser-sdk'
+
+import Button from '@material-ui/core/Button';
+import TextField from '@material-ui/core/TextField';
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogContentText from '@material-ui/core/DialogContentText';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import MenuItem from '@material-ui/core/MenuItem';
+
+
+
+
+import { observable } from 'mobx'
+import { observer } from 'mobx-react'
+
+class AppState {
+  @observable currentTime = 0
+  @observable objects = []
+  @observable selectedObject=''
+  @observable tagJSON = {}
+  @observable points={}
+  @observable open=false
+  // constructor() {
+  //       this.currentTime=4;
+  //         setInterval(() => {
+  //             console.log('inc',this.currentTime)
+  //             this.currentTime += 1;
+  //         }, 1000);
+  //     }
+}
+const appState = new AppState()
+
+
 import parms from '../parms'
 
 //import {store} from '../store'
 
+const client = Stitch.initializeDefaultAppClient("test1-jwipq");
+client.auth
+  .loginWithCredential(new AnonymousCredential())
+// Get a MongoDB Service Client
+const mongodb = client.getServiceClient(
+  RemoteMongoClient.factory,
+  "mongodb-atlas"
+);
+// Get a reference to the blog database
+const db = mongodb.db("blog");
+
+function displayComments() {
+  db.collection("comments")
+    .find({}, { limit: 1000 })
+    .asArray()
+    .then(docs => console.log(docs))
+  // db.collection("comments")
+  //   .find({}, { limit: 1000 })
+  //   .asArray()
+  //   .then(docs => docs.map(doc => `<div>${doc.owner_id},${doc.comment}</div>`))
+  //   .then(comments => document.getElementById("comments").innerHTML = comments)
+}
+
+function displayCommentsOnLoad() {
+  client.auth
+    .loginWithCredential(new stitch.AnonymousCredential())
+    .then(displayComments)
+    .catch(console.error);
+}
+
+function addComment() {
+  const newComment = document.getElementById("new_comment");
+  console.log("add comment", client.auth.user.id)
+  db.collection("comments")
+    .insertOne({ owner_id: client.auth.user.id, comment: newComment.value, pts:[1,3,5] })
+    .then(displayComments);
+  newComment.value = "";
+}
+
+
+
+
+const styles = theme => ({
+  container: {
+    display: 'flex',
+    flexWrap: 'wrap',
+  },
+  textField: {
+    marginLeft: theme.spacing.unit,
+    marginRight: theme.spacing.unit,
+  },
+  dense: {
+    marginTop: 16,
+  },
+  menu: {
+    width: 200,
+  },
+});
+
+const currencies = [
+  {
+    value: 'USD',
+    label: 'Низкая',
+  },
+  {
+    value: 'EUR',
+    label: 'Средняя',
+  },
+  {
+    value: 'BTC',
+    label: 'Высокая',
+  },
+];
+
+
+
+@observer
+class FormDialog extends React.Component {
+  state = {
+      open: false,
+      name: 'Добавьте Название',
+     descr: 'Добавьте Описание',
+     age: '',
+     multiline: 'Controlled',
+     currency: 'EUR',
+   };
+
+   handleChange = name => event => {
+     console.log('onChange',name)
+     console.log(event.target,event.target.value)
+     this.setState({[name]:event.target.value})
+   };
+
+  handleOK = () => {
+    appState.open=false
+    console.log(this.state)
+    this.props.handleOK(this.state)
+  };
+
+  handleClose = () => {
+    appState.open=false
+    this.props.handleCancel()
+  };
+
+  render() {
+    const { classes } = this.props;
+    return (
+      <div>
+        {/*<Button onClick={this.handleClickOpen}>Open form dialog</Button>*/}
+        <Dialog
+          open={this.props.appState.open}
+          onClose={this.handleClose}
+          aria-labelledby="form-dialog-title"
+        >
+          <DialogTitle id="form-dialog-title">Метка</DialogTitle>
+
+          <DialogContent>
+
+          {/*<DialogContentText>
+            Имя
+          </DialogContentText>
+*/}
+          <TextField
+            autoFocus
+            margin="dense"
+            id="name"
+            label="Название"
+            defaultValue={this.state.name}
+            type="email"
+            fullWidth
+            onChange={this.handleChange('name')}
+          />
+
+          {/*<DialogContentText>
+            Описание
+          </DialogContentText>
+*/}
+
+          <TextField
+                    id="filled-select-currency"
+                    select
+                    label="Критичность"
+                    className={classes.textField}
+                    value={this.state.currency}
+                    onChange={this.handleChange('currency')}
+                    SelectProps={{
+                      MenuProps: {
+                        className: classes.menu,
+                      },
+                    }}
+                    // helperText="Please select your currency"
+                    margin="normal"
+                    variant="filled"
+                  >
+                    {currencies.map(option => (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+<TextField
+            margin="dense"
+            id="descr"
+            label="Описание"
+            defaultValue={this.state.descr}
+            type="email"
+            fullWidth
+            onChange={this.handleChange('descr')}
+          />
+          </DialogContent>
+
+          <DialogActions>
+            <Button onClick={this.handleClose} color="primary">
+              Отмена
+            </Button>
+            <Button onClick={this.handleOK} color="primary">
+              Добавить
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </div>
+    );
+  }
+}
+
+
+
 var INTERSECTED
+var ptNumb=1
 
 class ThreeCanvas {
   constructor(renderer, box) {
@@ -15,6 +238,7 @@ class ThreeCanvas {
     // this.obsts = []
     this.raycaster = new THREE.Raycaster()
     this.mouse = new THREE.Vector2()
+    this.mouseR = new THREE.Vector2()
     this.tVect = new THREE.Vector3()
     this.cLength = 0
     this.mapViewMode = true
@@ -59,79 +283,6 @@ class ThreeCanvas {
     return plane
   }
 
-  makeTextSprite(message, parameters) {
-    if (parameters === undefined) parameters = {}
-
-    var fontface = parameters.hasOwnProperty('fontface')
-      ? parameters['fontface']
-      : 'Arial'
-
-    var fontsize = parameters.hasOwnProperty('fontsize')
-      ? parameters['fontsize']
-      : 18
-
-    var borderThickness = parameters.hasOwnProperty('borderThickness')
-      ? parameters['borderThickness']
-      : 4
-
-    var borderColor = parameters.hasOwnProperty('borderColor')
-      ? parameters['borderColor']
-      : { r: 0, g: 0, b: 0, a: 1.0 }
-
-    var backgroundColor = parameters.hasOwnProperty('backgroundColor')
-      ? parameters['backgroundColor']
-      : { r: 255, g: 255, b: 255, a: 1.0 }
-    // var spriteAlignment = THREE.SpriteAlignment.topLeft;
-
-    var canvas = document.createElement('canvas')
-    var context = canvas.getContext('2d')
-    context.font = 'Bold ' + fontsize + 'px ' + fontface
-
-    // get size data (height depends only on font size)
-    var metrics = context.measureText(message)
-    var textWidth = metrics.width
-
-    // background color
-    context.fillStyle =
-      'rgba(' +
-      backgroundColor.r +
-      ',' +
-      backgroundColor.g +
-      ',' +
-      backgroundColor.b +
-      ',' +
-      backgroundColor.a +
-      ')'
-    // border color
-    context.strokeStyle =
-      'rgba(' +
-      borderColor.r +
-      ',' +
-      borderColor.g +
-      ',' +
-      borderColor.b +
-      ',' +
-      borderColor.a +
-      ')'
-    context.lineWidth = borderThickness
-    // roundRect(context, borderThickness/2, borderThickness/2, textWidth + borderThickness, fontsize * 1.4 + borderThickness, 6);
-    // 1.4 is extra height factor for text below baseline: g,j,p,q.
-
-    // text color
-    context.fillStyle = 'rgba(0, 0, 0, 1.0)'
-    context.fillText(message, borderThickness, fontsize + borderThickness)
-
-    // canvas contents will be used for a texture
-    var texture = new THREE.Texture(canvas)
-    texture.needsUpdate = true
-    var spriteMaterial = new THREE.SpriteMaterial({
-      map: texture
-      // useScreenCoordinates: false, alignment: spriteAlignment
-    })
-    var sprite = new THREE.Sprite(spriteMaterial)
-    // sprite.scale.set(100,50,1.0);
-    return sprite
-  }
 
   init = mountId => {
     this.el = document.getElementById(mountId)
@@ -278,6 +429,13 @@ class ThreeCanvas {
     this.divElem.innerHTML = 'text' //+ i;
     // this.el.appendChild(this.divElem)
 
+    this.divElemMark = document.createElement('div')
+    this.divElemMark.style.position = 'absolute'
+    this.divElemMark.style.zIndex = 3
+    // divElem.style.color = 'white';
+    this.divElemMark.innerHTML = 'text' //+ i;
+    this.el.appendChild(this.divElemMark)
+
     // Instantiate a loader
     const loader = new GLTFLoader()
     // Optional: Provide a DRACOLoader instance to decode compressed mesh data
@@ -297,30 +455,63 @@ class ThreeCanvas {
           // .filter(x => x.type == 'Mesh')
           .filter(x => x.name.includes('Girder'))
           .forEach((x,i) => {
+            appState.objects.push(x.name)
+            appState.points[x.name]=[]
             this.targetNode.add(x);
-            let divElem = document.createElement('div')
-            divElem.style.position = 'absolute'
-            // // divElem.style.zIndex = 3
-            // // divElem.style.color = 'white';
-            divElem.innerHTML = 'object_' + i
-            x.userData = divElem
-            this.el.appendChild(divElem)
+            // let divElem = document.createElement('div')
+            // divElem.style.position = 'absolute'
+            // // // divElem.style.zIndex = 3
+            // // // divElem.style.color = 'white';
+            // divElem.innerHTML = 'object_' + i
+            // x.userData = divElem
+            // this.el.appendChild(divElem)
           })
 
           gltf.scene.children
             .filter(x => x.name.includes('Mesh'))
             .forEach((x,i) => {
               this.oNode.add(x);
-              let divElem = document.createElement('div')
-              divElem.style.position = 'absolute'
-              // // divElem.style.zIndex = 3
-              // // divElem.style.color = 'white';
-              divElem.innerHTML = 'object_' + i
-              x.userData = divElem
-              this.el.appendChild(divElem)
+              // let divElem = document.createElement('div')
+              // divElem.style.position = 'absolute'
+              // // // divElem.style.zIndex = 3
+              // // // divElem.style.color = 'white';
+              // divElem.innerHTML = 'object_' + i
+              // x.userData = divElem
+              // this.el.appendChild(divElem)
             })
 
-        console.log('gltf',gltf,this.targetNode)
+        // console.log('gltf',gltf,this.targetNode)
+
+        db.collection("comments")
+          .find({type:'point'}, { limit: 1000 })
+          .asArray()
+          .then(docs => {console.log(docs)
+            docs.forEach(x=>{
+              if(x.parent){
+                console.log(x.parent,x.pos)
+
+                let geometry = new THREE.SphereGeometry(1, 16, 16)
+                let material = new THREE.MeshBasicMaterial({
+                  color: 0xff0000,
+                  transparent: true,
+                  opacity: 0.4
+                })
+                // material.wireframe=true
+                let cube = new THREE.Mesh(geometry, material)
+                cube.name='Point_'+ptNumb
+                ptNumb+=1
+                let parentObj=this.scene.getObjectByName(x.parent)
+                if(parentObj){
+                  let markNode=new THREE.Object3D()
+                  parentObj.add(markNode)
+                  markNode.add(cube)
+                  cube.position.set(x.pos.x,x.pos.y,x.pos.z)
+                  // console.log('click!', this.intersects[0].point, cube.position)
+                  // appState.points[appState.selectedObject].push(cube.name)
+              }
+              }
+            })
+          })
 
         // gltf.animations // Array<THREE.AnimationClip>
         // gltf.scene // THREE.Scene
@@ -338,38 +529,6 @@ class ThreeCanvas {
       }
     )
 
-    // for (let i = 1; i < 500; i++) {
-    //   let obj = this.createCube(
-    //     // new THREE.Vector3(Math.random() * 20 - 10, 0, -Math.random() * 20 - 5), i>250?materialGreen:materialRed
-    //     new THREE.Vector3(0, 0, 0),
-    //     i > 250 ? materialGreen : materialRed
-    //   )
-    //
-    //   let divElem = document.createElement('div')
-    //   divElem.style.position = 'absolute'
-    //   // divElem.style.zIndex = 3
-    //   // divElem.style.color = 'white';
-    //   divElem.innerHTML = 'sphere_' + i
-    //   obj.userData = divElem
-    //   // this.el.appendChild(divElem)
-    //
-    //   this.oNode.add(obj)
-    // }
-
-    // var spritey = this.makeTextSprite(' Hello, ', {
-    //   fontsize: 14,
-    //   borderColor: { r: 255, g: 0, b: 0, a: 1.0 },
-    //   backgroundColor: { r: 255, g: 100, b: 100, a: 0.8 }
-    // })
-    // spritey.position.set(-5, 1, 0)
-    // scene.add(spritey)
-    // var spritey = this.makeTextSprite(' World! ', {
-    //   fontsize: 12,
-    //   fontface: 'Georgia',
-    //   borderColor: { r: 0, g: 0, b: 255, a: 1.0 }
-    // })
-    // spritey.position.set(5, 1, 0)
-    // scene.add(spritey)
 
     // this.projector=new THREE.Projector()
     this.pt3d = new THREE.Vector3()
@@ -398,7 +557,6 @@ class ThreeCanvas {
       this.renderer.render(this.scene, camera)
     }
 
-
     const animate2 = () => {
       if (this.mapViewMode) {
 
@@ -406,25 +564,55 @@ class ThreeCanvas {
 
         this.raycaster.setFromCamera(this.mouse, this.camera)
 
+        // this.targetNode.children.forEach(x=>{
+        //   // console.log(x)
+        //   this.intersects = this.raycaster.intersectObjects(x.children)
+        //   if(this.intersects.length){
+        //   this.cube.visible = true
+        //   this.arrowHelper.visible = true
+        //
+        //   this.cube.position.copy(this.intersects[0].point)
+        //   this.arrowHelper.position.copy(this.intersects[0].point)
+        //   this.arrowHelper.setDirection(this.intersects[0].face.normal)
+        // }
+        // })
+
         // calculate objects intersecting the picking ray
         this.intersects = this.raycaster.intersectObjects(
-          this.targetNode.children
+          this.targetNode.children,true
         )
-
+        // console.log(this.intersects.length)
+// this.intersects.length=[]
         if (this.intersects.length > 0) {
           if (INTERSECTED != this.intersects[0].object) {
             if (INTERSECTED)
               INTERSECTED.material.color.setHex(INTERSECTED.currentHex)
             INTERSECTED = this.intersects[0].object
             INTERSECTED.currentHex = INTERSECTED.material.color.getHex()
+            if(INTERSECTED.name.includes('Point')){
+              // console.log('Point')
+              INTERSECTED.material.color.setHex(0xffff00)
+              this.divElemMark.style.left = this.mouseR.x + 'px'
+              this.divElemMark.style.top = this.mouseR.y + 'px'
+              // console.log(this.divElemMark)
+              this.divElemMark.style.visibility='visible'
+            }else{
+            this.divElemMark.style.visibility='hidden'
             INTERSECTED.material.color.setHex(0xff0000)
+            appState.selectedObject=INTERSECTED.name
+
+          }
             // console.log(this.intersects)
-            // console.log(this.intersects[0].point)
+            // console.log(this.intersects[0].point,this.intersects[0].object)
+            // appState.objects.push('ddd')
           }
         } else {
           if (INTERSECTED)
             INTERSECTED.material.color.setHex(INTERSECTED.currentHex)
           INTERSECTED = null
+          appState.selectedObject=''
+          this.divElemMark.style.visibility='hidden'
+
         }
       } else {
         this.raycaster.setFromCamera(this.mouse, this.camera)
@@ -510,6 +698,8 @@ class ThreeCanvas {
     // (-1 to +1) for both components
     this.mouse.x = event.clientX / window.innerWidth * 2 - 1
     this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
+    this.mouseR.x = event.clientX
+    this.mouseR.y = event.clientY
     // console.log(this.mouse)
   }
 
@@ -520,9 +710,11 @@ class ThreeCanvas {
     this.renderer.setSize(this.el.clientWidth, this.el.clientHeight / 1)
   }
 
+
   onDocumentMouseDown = () => {
     if (this.mapViewMode) {
       if (this.intersects.length) {
+        displayComments()
         // this.targetNode.visible=false
         this.scene.remove(this.targetNode)
         this.scene.remove(this.oNode)
@@ -546,10 +738,13 @@ class ThreeCanvas {
           opacity: 0.4
         })
         // material.wireframe=true
-        let cube = new THREE.Mesh(geometry, material)
-        this.markNode.add(cube)
-        cube.position.copy(this.intersects[0].point)
-        console.log('click!', this.intersects[0].point, cube.position)
+        this.tempMark = new THREE.Mesh(geometry, material)
+        this.tempMark.name='Point_'+ptNumb
+        ptNumb+=1
+        this.markNode.add(this.tempMark)
+        this.tempMark.position.copy(this.intersects[0].point)
+        // console.log('click!', this.intersects[0].point, cube.position)
+        appState.open=true
       }
     }
   }
@@ -557,127 +752,65 @@ class ThreeCanvas {
   onDocumentKeyDown = event => {
     console.log(event)
     if(this.mapViewMode==false){
+      if(!appState.open){
       this.currObj.add(this.markNode)
       this.editNode.remove(this.editObj)
       this.scene.add(this.targetNode)
       this.scene.add(this.oNode)
       // this.targetNode.visible=true
       this.mapViewMode=true
+      // appState.open=false
       document.getElementById('hintLine').innerHTML='text2'
+    }
     }
   }
 
-  update = msg => {
-    this.pt3d.copy(this.cube.position)
-    this.pt2d = this.pt3d.project(this.camera)
-    this.pt2d.x = (this.pt2d.x + 1) / 2 * this.el.clientWidth
-    let x1 = (this.pt2d.x + 1) / 2 // * this.el.clientWidth;
-    this.pt2d.y = -(this.pt2d.y - 1) / 2 * this.el.clientHeight
-    // console.log('pt2d',this.pt3d,this.pt2d,this.el.clientWidth,x1,this.cube.position)
-    this.divElem.style.position = 'absolute'
-    // this.divElem.style.position = 'relative'
-    this.divElem.style.left = this.pt2d.x + 'px'
-    this.divElem.style.top = this.pt2d.y + 'px'
-    // this.divElem.style.top = this.pt2d.y - this.el.clientHeight + 'px'
-    this.divElem.innerHTML =
-      this.pt2d.x.toFixed(2) + ' ' + this.pt2d.y.toFixed(2)
+  confirmMark=(state)=>{
+    appState.points[appState.selectedObject].push(this.tempMark.name)
+    appState.open=true
+    db.collection("comments")
+      .insertOne({ owner_id: client.auth.user.id, type: 'point',
+      parent:this.currObj.name,
+      name:state.name,
+      level:state.currency,
+      descr:state.descr,
+        pos:{x:this.tempMark.position.x,y:this.tempMark.position.y,z:this.tempMark.position.z}})
+      .then(displayComments);
+    console.log('Mark Confirmed')
+    appState.open=false
+  }
 
-    let data = msg.objsFrame
-    let indOffs = 0
-    // console.log(msg.bus)
-    if (msg.bus == 'can1') {
-      for (let i = 250; i < 500; i++) {
-        this.oNode.children[i].visible = false
-      }
-      indOffs = 250
-      // return
-    } else {
-      for (let i = 1; i < 250; i++) {
-        this.oNode.children[i].visible = false
-        this.oNode.children[i].userData.style.visibility = 'hidden'
-      }
-    }
+  rejectMark=()=>{
+    this.markNode.remove(this.tempMark)
+    console.log('Mark Rejected')
+    appState.open=false
+  }
 
-    //  this.oNode.children.forEach(x=>x.visible=false)
-    //    this.box.position.z += 10
-    Object.values(data)
-      .filter(t => t.updated)
-      .forEach((t, i) => {
-        // console.log(t,i)
-        let colorId = 'dangerArea'
+}
 
-        let drWidth = t.Object_Width || 0.1
-        let drLength = t.Object_Length || 0.1
+@observer
+class DataView extends Component{
 
-        // let str = t.Object_ID + ' ' + t.Object_DistLong + ' ' + t.Object_DistLat
+  printName(){
+    return this.props.appState.points[this.props.appState.selectedObject].length>0?'Метки:':null
+  }
 
-        this.tVect.x = t.Object_VrelLat
-        this.tVect.y = 0
-        this.tVect.z = t.Object_VrelLong
-        this.cLength = this.tVect.length()
-        this.tVect.normalize()
-        // console.log(tVect)
-
-        let cObj = this.oNode.children[i + indOffs]
-
-        let speedArrow = cObj.getObjectByName('speedArrow')
-        // console.log(speedArrow)
-        speedArrow.setDirection(this.tVect)
-        speedArrow.setLength(this.cLength)
-
-        // // let str = t.rcs
-        let x = 1 * t.Object_DistLat // + offsX
-        let y = 1.0 * t.Object_DistLong // + offsY
-        // drawRect(ctx, x, y, drWidth * resX, drLength * resY, t.colorId)
-
-        this.oNode.children[i + indOffs].scale.x = drWidth
-        this.oNode.children[i + indOffs].scale.z = drLength
-
-        this.oNode.children[i + indOffs].position.z = y
-
-        if (msg.bus == 'can1') this.oNode.children[i + indOffs].position.y = x
-        else this.oNode.children[i + indOffs].position.x = x
-
-        this.oNode.children[i + indOffs].visible = true
-        if (t.colorId == 'dangerArea')
-          this.oNode.children[i + indOffs].material = this.materialRed
-        else this.oNode.children[i + indOffs].material = this.materialBlue
-        // if(t.colorId=='dangerArea')
-        // console.log(t.colorId)
-        // console.log(i)
-
-        // this.divElem = this.oNode.children[i + indOffs].userData
-        // this.divElem.style.visibility=this.oNode.children[i + indOffs].visible?'visible':'hidden'
-        // // this.divElem.style.visibility=this.oNode.children[i + indOffs].visible?'visible':'hidden'
-        // // console.log(this.divEl)
-        // this.pt3d.copy(this.oNode.children[i + indOffs].position)
-        // this.pt2d = this.pt3d.project(this.camera)
-        // this.pt2d.x = ((this.pt2d.x + 1) / 2) * this.el.clientWidth
-        // let x1 = (this.pt2d.x + 1) / 2 // * this.el.clientWidth;
-        // this.pt2d.y = (-(this.pt2d.y - 1) / 2) * this.el.clientHeight
-        // // console.log('pt2d',this.pt3d,this.pt2d,this.el.clientWidth,x1,this.cube.position)
-        // // this.divElem.style.position = 'relative'
-        // this.divElem.style.left = this.pt2d.x + 'px'
-        // this.divElem.style.top = this.pt2d.y + 'px'
-        // this.divElem.innerHTML =
-        //   this.pt2d.x.toFixed(2) + ' ' + this.pt2d.y.toFixed(2)
-
-        // console.log()
-        // this.pt3d.copy(this.oNode.children[i + indOffs].position)
-        // this.pt2d=this.pt3d.project(this.camera)
-        // this.pt2d.x = (this.pt2d.x + 1)/2 * this.el.clientWidth;
-        // let x1 = (this.pt2d.x + 1)/2// * this.el.clientWidth;
-        // this.pt2d.y = - (this.pt2d.y - 1)/2 * this.el.clientHeight;
-        // console.log('pt2d',this.pt3d,this.pt2d,this.el.clientWidth,x1,this.oNode.children[i + indOffs].position)
-
-        // this.objs[this.readyFrameInd]
-
-        // ctx.fillStyle = '#000000'
-        // if (state.config.Labels)
-        // ctx.fillText(str, x + (lblOffsX * resX) / 2, y - (lblOffsY * resY) / 2)
-        // console.log('rdgo',t.Object_ID,t.Object_DistLat,t.Object_DistLong,x,y)
-      })
-    this.renderer.render(this.scene, this.camera)
+  render(){
+    // return null
+    // console.log(this.props.appState.points[this.props.appState.selectedObject])
+    return(
+      <div style={{fontSize:'small'}}>
+      <div style={{color:'#4444aa'}}>{'Вышки:'}</div>
+      {this.props.appState.objects.map(x=>
+        <div style={{color:this.props.appState.selectedObject==x?"#ff0000":"#000000"}}>{x}</div>)}
+      {/*<div>{this.props.appState.selectedObject}</div>*/}
+      {this.props.appState.selectedObject != ''?<div>
+      <div style={{color:'#4444aa'}}>{this.printName()}</div>
+      {this.props.appState.points[this.props.appState.selectedObject].map(x=><div>{x}</div>)}
+      </div>
+    :null}
+      </div>
+    )
   }
 }
 
@@ -685,6 +818,7 @@ class ThreeView extends Component {
   constructor() {
     super()
     this.tc = new ThreeCanvas()
+    console.log('tc',this.tc)
   }
 
   // componentWillMount = () => {
@@ -708,19 +842,64 @@ class ThreeView extends Component {
 
   render = () => {
     return (
-      <div id='hintLine' style={{height: "40px",
+      <div>
+      <div style={{zIndex:7}}>
+      {/*// <FormDialog />*/}
+      </div>
+      <div id='2' style={{height: "100%",
                   // display:"inline",
                   position: "fixed",
-                  bottom:"0%",
-                  width:"100%",
+                  top:0,
+                  left:0,
+                  width:"10%",
                   color:"0xffffff",
                   backgroundColor: "rgba(0,100,0,0.4)",
                   border:'1px solid #44ffff',
                   opacity:"1",
-                  textAlign: 'center',
-                  verticalAlign: 'middle',
-                  lineHeight: '40px'
-                              }} />
+                  // textAlign: 'center',
+                  // verticalAlign: 'middle',
+                  // lineHeight: '40px'
+                              }} >
+                              <DataView appState={appState}/>
+                              </div>
+
+                              <FormDialog
+                              appState={appState}
+                              classes={styles}
+                              handleOK={this.tc.confirmMark}
+                              handleCancel={this.tc.rejectMark}
+                              />
+
+                              {/*<div id='hintLinet' style={{height: "40px",
+                                          // display:"inline",
+                                          position: "fixed",
+                                          top:"0%",
+                                          width:"100%",
+                                          color:"0xffffff",
+                                          backgroundColor: "rgba(0,100,0,0.4)",
+                                          border:'1px solid #44ffff',
+                                          opacity:"1",
+                                          textAlign: 'center',
+                                          verticalAlign: 'middle',
+                                          lineHeight: '40px'
+                                                      }} >
+                                                      </div>
+*/}
+                                                      <div id='hintLine' style={{height: "40px",
+                                                                  // display:"inline",
+                                                                  position: "fixed",
+                                                                  bottom:"0%",
+                                                                  width:"100%",
+                                                                  color:"0xffffff",
+                                                                  backgroundColor: "rgba(0,100,0,0.4)",
+                                                                  border:'1px solid #44ffff',
+                                                                  opacity:"1",
+                                                                  textAlign: 'center',
+                                                                  verticalAlign: 'middle',
+                                                                  lineHeight: '40px'
+                                                                              }} >
+                                                                              </div>
+                                                      </div>
     )
   }
 }
