@@ -37,10 +37,7 @@ class AppState {
 }
 const appState = new AppState()
 
-
 import parms from '../parms'
-
-//import {store} from '../store'
 
 const client = Stitch.initializeDefaultAppClient("test1-jwipq");
 client.auth
@@ -103,15 +100,15 @@ const styles = theme => ({
 
 const currencies = [
   {
-    value: 'USD',
+    value: 'low',
     label: 'Низкая',
   },
   {
-    value: 'EUR',
+    value: 'mid',
     label: 'Средняя',
   },
   {
-    value: 'BTC',
+    value: 'high',
     label: 'Высокая',
   },
 ];
@@ -485,7 +482,9 @@ class ThreeCanvas {
         db.collection("comments")
           .find({type:'point'}, { limit: 1000 })
           .asArray()
-          .then(docs => {console.log(docs)
+          .then(docs => {
+            console.log('docs',docs)
+            this.pts=docs
             docs.forEach(x=>{
               if(x.parent){
                 console.log(x.parent,x.pos)
@@ -596,6 +595,14 @@ class ThreeCanvas {
               this.divElemMark.style.top = this.mouseR.y + 'px'
               // console.log(this.divElemMark)
               this.divElemMark.style.visibility='visible'
+              let pt=this.pts.find(x=>x.pos.x==INTERSECTED.position.x)
+              let str=pt.name?pt.name:'noName'
+              str+='<br>'
+              str+=pt.level?pt.level:'noLevel'
+              str+='<br>'
+              str+=pt.descr?pt.descr:'noDescr'
+              this.divElemMark.innerHTML=str
+              //console.log('pt=',pt)
             }else{
             this.divElemMark.style.visibility='hidden'
             INTERSECTED.material.color.setHex(0xff0000)
@@ -767,14 +774,24 @@ class ThreeCanvas {
 
   confirmMark=(state)=>{
     appState.points[appState.selectedObject].push(this.tempMark.name)
-    appState.open=true
+    // appState.open=true
+let obj=    { owner_id: client.auth.user.id, type: 'point',
+  parent:this.currObj.name,
+  name:state.name,
+  level:state.currency,
+  descr:state.descr,
+    pos:{x:this.tempMark.position.x,y:this.tempMark.position.y,z:this.tempMark.position.z}}
+    this.pts.push(obj)
+
     db.collection("comments")
-      .insertOne({ owner_id: client.auth.user.id, type: 'point',
+      .insertOne(
+        { owner_id: client.auth.user.id, type: 'point',
       parent:this.currObj.name,
       name:state.name,
       level:state.currency,
       descr:state.descr,
-        pos:{x:this.tempMark.position.x,y:this.tempMark.position.y,z:this.tempMark.position.z}})
+        pos:{x:this.tempMark.position.x,y:this.tempMark.position.y,z:this.tempMark.position.z}}
+      )
       .then(displayComments);
     console.log('Mark Confirmed')
     appState.open=false
