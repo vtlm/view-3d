@@ -1,8 +1,10 @@
 import React, { Component } from 'react'
-import uuidv1 from 'uuid'
-import CanApp from './CanApp2'
+// import uuidv1 from 'uuid'
+// import CanApp from './CanApp2'
 
-import * as d3 from "d3";
+// import * as d3 from "d3";
+import ThreeView from './ThreeView'
+
 
 import './MainView.css'
 
@@ -14,6 +16,7 @@ import D3View from './D3ViewClass2'
 
 
 let d3ref1=React.createRef()
+let ref3d=React.createRef()
 
 export default class MainView extends Component {
 
@@ -94,6 +97,7 @@ export default class MainView extends Component {
               width: '100%',
               height: '100%'
             }}
+            onMouseLeave={(e)=>{console.log('Leave MV',e)}}
           />
 
           {/*<div
@@ -108,26 +112,7 @@ export default class MainView extends Component {
           */}
         </div>
 
-        <div
-          // style={{
-          //   display: 'flex',
-          //   flexDirection: 'row'
-          // }}
-          >
-          {/*<div className="graph"></div>*/}
-
-          {/*{this.arr.map((x,i)=><D3View ref={x} key={i} name={'u'+uuidv1()} data={this.state.sData} initVal={10}/>)}*/}
-
-          {/*<div class="graph"></div>*/}
-          <CanApp />
-          {/*<LegendsBlock lehends={parms.legends} />*/}
-          {/*<LegendsBlock lehends={parms.legends} />*/}
-          {/*MainView*/}
-          {/*<RectColorLegend name={'danger'} color={'#ee6666'} />
-        <RectColorLegend name={'danger'} color={'#ee6666'} />
-        <RectColorLegend name={'danger'} color={'#ee6666'} />
-*/}
-        </div>
+          <ThreeView ref={ref3d} mountId="main-id-1" />
       </div>
     )
   }
