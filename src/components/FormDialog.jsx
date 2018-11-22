@@ -52,12 +52,14 @@ class FormDialog extends React.Component {
     descr: 'Описание',
     age: '',
     multiline: 'Controlled',
-    level: 'mid'
+    level: 'undef'
   }
 
   static getDerivedStateFromProps(props, state){
-    console.log('gdsfp',state)
-    if(!state.level){
+    console.log('gdsfp',state,props)
+    if(!appState[props.dKey])
+      return null
+    if(state.level === 'undef'){
       state.level=props.level
       return state
     }
@@ -83,7 +85,8 @@ class FormDialog extends React.Component {
     appState.mouseInPanel=false
     console.log(e)
     e.preventDefault()
-    e.stopPropagate()
+    this.setState({level:'undef'})
+    // e.stopPropagate()
   }
 
   handleRemove = () => {
@@ -97,6 +100,7 @@ class FormDialog extends React.Component {
     appState.open = false
     this.props.handleCancel()
     appState.mouseInPanel=false
+    this.setState({level:'undef'})
   }
 
   render() {
@@ -105,7 +109,7 @@ class FormDialog extends React.Component {
     return (
       // <div>
         <Dialog
-          open={this.props.appState[this.props.dKey]}
+          open={appState[this.props.dKey]}
           onClose={this.handleClose}
           aria-labelledby="form-dialog-title"
         >

@@ -16,6 +16,7 @@ class AppState {
   @observable mark = {}
   @observable selectMode='obj'
   @observable pt={}
+  @observable pts=[]
   // constructor() {
   //       this.currentTime=4;
   //         setInterval(() => {                                                                                                                                                                

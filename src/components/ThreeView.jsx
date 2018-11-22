@@ -17,6 +17,7 @@ import { appState, floatHintState } from "./AppState";
 import DataView from "./DataView";
 import Float from "./FloatHint";
 import FormDialog, { styles } from "./FormDialog";
+import NestedList from './NestedList'
 
 import parms from "../parms";
 import FloatHint from "./FloatHint";
@@ -683,15 +684,17 @@ class ThreeCanvas {
 @observer
 class WrapDialog extends Component {
   render() {
-    console.log('rWD')
+    console.log('rWD',toJS(appState.mark))
     return (
       <FormDialog
-        appState={appState}
+        // appState={appState}
         dKey={"open"}
-        name={appState.mark ? appState.mark.name : ""}
-        descr={appState.mark ? appState.mark.descr : ""}
+        name={appState.mark.name ? appState.mark.name : ""}
+        // level={appState.mark ? toJS(appState.mark).level : 'mid'}
+        level={appState.mark.level ? appState.mark.level : 'mid'}
+        descr={appState.mark.descr ? appState.mark.descr : ""}
         // name={"mark"}
-        level={"mid"}
+        // level={"mid"}
         // descr={"description"}
         classes={styles}
         handleOK={this.props.handleOK}
@@ -699,6 +702,16 @@ class WrapDialog extends Component {
         handleCancel={this.props.handleCancel}
       />
     );
+  }
+}
+
+@observer
+class WrapNestedList extends Component{
+  render(){
+    console.log('rWNL',this.props.appState)
+    return(
+      <NestedList appState={this.props.appState} />
+    )
   }
 }
 
@@ -771,11 +784,12 @@ class ThreeView extends Component {
             // lineHeight: '40px'
           }}
         >
-          <DataView appState={appState} />
+          <DataView appState={appState} pts={appState.pts}/>
+          <WrapNestedList appState={appState} pts={appState.pts}/>
         </div>
 
         <WrapDialog
-          appState={appState}
+          // appState={appState}
           handleOK={this.tc.confirmMark}
           handleRemove={this.tc.removeMark}
           handleCancel={this.tc.rejectMark}

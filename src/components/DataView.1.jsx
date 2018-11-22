@@ -30,8 +30,6 @@ import Select from '@material-ui/core/Select';
 import FormDialog, {styles} from './FormDialog'
 import {appState} from './AppState'
 
-import NestedList from './NestedList'
-
 @observer
 class ViewLine extends Component {
   // onMouseMove=e=>{console.log('mousemove');e.preventDefault()}
@@ -139,14 +137,12 @@ class DataView extends Component {
 
   render() {
     // return null
-    console.log('DataView rend', appState) //[appState.selectedObjectInPanel])
+    // console.log('DataView rend', appState.pts) //[appState.selectedObjectInPanel])
     const { classes } = this.props;
     return (
       <div style={{ fontSize: 'small'
       // ,textDecoration:'none' 
     }}>
-
-    <NestedList appState={this.props.appState} pts={this.props.pts}/>
 
 <FormControl className={{
     // margin: theme.spacing.unit,
