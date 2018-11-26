@@ -146,7 +146,7 @@ class DataView extends Component {
       // ,textDecoration:'none' 
     }}>
 
-    <NestedList appState={this.props.appState} pts={this.props.pts}/>
+    {/* <NestedList appState={this.props.appState} pts={this.props.pts}/> */}
 
 <FormControl className={{
     // margin: theme.spacing.unit,

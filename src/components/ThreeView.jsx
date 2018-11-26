@@ -3,6 +3,9 @@ import * as THREE from "three";
 import OrbitControls from "orbit-controls-es6";
 import GLTFLoader from "three-gltf-loader";
 
+import {Tree} from 'antd'
+import "antd/dist/antd.css";
+
 import {
   Stitch,
   AnonymousCredential,
@@ -12,15 +15,19 @@ import {
 import { observable, toJS } from "mobx";
 import { observer } from "mobx-react";
 
-import { appState, floatHintState } from "./AppState";
+import { appState, floatHintState, spaState,spaStateObj } from "./AppState";
 
-import DataView from "./DataView";
+// import DataView from "./DataView";
 import Float from "./FloatHint";
 import FormDialog, { styles } from "./FormDialog";
 import NestedList from './NestedList'
+import MobxTst from './MobxTst'
 
 import parms from "../parms";
 import FloatHint from "./FloatHint";
+
+const TreeNode = Tree.TreeNode;
+
 
 const client = Stitch.initializeDefaultAppClient("test1-jwipq");
 client.auth.loginWithCredential(new AnonymousCredential());
@@ -290,6 +297,7 @@ class ThreeCanvas {
           .filter(x => x.name.includes("Girder"))
           .forEach((x, i) => {
             appState.objects.push(x.name);
+            spaStateObj.objects.push(x.name);
             appState.points[x.name] = [];
             this.targetNode.add(x);
             // let divElem = document.createElement('div')
@@ -322,6 +330,8 @@ class ThreeCanvas {
           .then(docs => {
             console.log("docs", docs);
             appState.pts = docs;
+            spaState.pts = docs;
+            spaStateObj.pts = docs;
             docs.forEach(x => {
               if (x.parent) {
                 console.log(x.parent, x.pos);
@@ -637,6 +647,7 @@ class ThreeCanvas {
       }
     };
     appState.pts.push(obj);
+    spaStateObj.pts.push(obj);
 
     db.collection("comments")
       .insertOne({
@@ -662,6 +673,8 @@ class ThreeCanvas {
     let obj = appState.pts.find(x => x.pos.x == xPos);
     let i = appState.pts.indexOf(obj);
     appState.pts.splice(i, 1);
+    spaState.pts.splice(i, 1);
+    spaStateObj.pts.splice(i, 1);
 
     console.log("remove", this.currObj, i, toJS(appState.mark.pos).x);
     this.currObj.parent.remove(this.currObj);
@@ -708,14 +721,70 @@ class WrapDialog extends Component {
 @observer
 class WrapNestedList extends Component{
   render(){
-    console.log('rWNL',this.props.appState)
+    console.log('rWNL',toJS(this.props.appState))
     return(
       <NestedList appState={this.props.appState} />
     )
   }
 }
 
-// @observer
+let arr=observable([])
+// let observ={
+//   @observable arr=[]
+// }
+
+setInterval(()=>{arr.push(200)
+  appState.pts.push(40)
+  spaState.pts.push({name:'cvb'})
+  a1.i+=1
+  // console.log(toJS(spaState))
+},1000)
+
+
+@observer
+class ViewPts extends Component{
+
+  createNode=x=>{
+    return (
+      <TreeNode title={x} key={x}>
+        {this.props.spaState.pts.map(xx=><TreeNode title={xx.name} />)}
+      </TreeNode>
+    )
+  }
+
+  render(){
+
+    // return(
+    //   <div>
+    //     {this.props.a1.i}
+    //   </div>
+    // )
+    console.log('rVP',toJS(this.props.spaState))
+    return(
+      this.props.spaState.pts?
+      <div>
+        ok
+        <Tree defaultExpandAll>
+          {this.props.spaState.objects.map(x=>this.createNode(x))}
+        
+        </Tree>
+        </div>
+        :null
+      
+    )
+  }
+}
+
+class A1{
+  i=0
+}
+
+var a1=observable({
+  i:0
+})//new A1()
+
+
+@observer
 class ThreeView extends Component {
   constructor() {
     super();
@@ -746,6 +815,8 @@ class ThreeView extends Component {
         {/*<div style={{zIndex:7}}>*/}
         {/*// <FormDialog />*/}
         {/*</div>*/}
+        {/* <ViewPts a1={a1}/> */}
+        {/* <MobxTst pts={appState.pts} /> */}
 
         <FloatHint pt={appState.pt} />
 
@@ -773,7 +844,7 @@ class ThreeView extends Component {
             position: "fixed",
             top: 0,
             left: 0,
-            width: "10%",
+            width: "20%",
             color: "0xffffff",
             backgroundColor: "rgba(0,100,0,0.4)",
             border: "1px solid #44ffff",
@@ -784,8 +855,14 @@ class ThreeView extends Component {
             // lineHeight: '40px'
           }}
         >
-          <DataView appState={appState} pts={appState.pts}/>
-          <WrapNestedList appState={appState} pts={appState.pts}/>
+        
+        {/* <ViewPts spaState={spaStateObj}/> */}
+
+          <WrapNestedList appState={spaStateObj}/>  
+
+
+          {/* <DataView appState={appState} pts={appState.pts}/>
+          <WrapNestedList appState={appState} pts={appState.pts}/> */}
         </div>
 
         <WrapDialog

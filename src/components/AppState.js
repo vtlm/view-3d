@@ -1,5 +1,22 @@
 import { observable } from 'mobx'
 
+
+
+class SpaState{
+  @observable   pts=[]
+}
+
+var spaStateObj=observable({
+  pts:null,
+  objects:[]
+})
+
+var spaState=new SpaState()
+
+// var spaState=observable({
+//   pts:[]
+// })
+
 class AppState {
   @observable currentTime = 0
   @observable objects = []
@@ -41,4 +58,4 @@ class FloatHintState{
 }
 const floatHintState = new FloatHintState()
 
-export {appState,dialogState,floatHintState}
+export {appState,dialogState,floatHintState,spaState,spaStateObj}

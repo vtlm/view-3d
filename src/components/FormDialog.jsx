@@ -105,7 +105,7 @@ class FormDialog extends React.Component {
 
   render() {
     const { classes } = this.props
-    console.log('FD props',this.props,appState.mark)
+    console.log('FD props',this.props)//,appState.mark)
     return (
       // <div>
         <Dialog
@@ -113,28 +113,31 @@ class FormDialog extends React.Component {
           onClose={this.handleClose}
           aria-labelledby="form-dialog-title"
         >
-          <DialogTitle id="form-dialog-title">Метка</DialogTitle>
-
+          <DialogTitle id="form-dialog-title">Параметры метки</DialogTitle>
+          
           <DialogContent>
             {/*<DialogContentText>
             Имя
           </DialogContentText>
 */}
+
+            {/* {this.props.name} */}
             <TextField
               autoFocus
               margin="dense"
               id="name"
               label="Название"
               defaultValue={this.props.name}
+              // value={this.props.name}
               type="email"
               fullWidth
               onChange={this.handleChange('name')}
             />
 
-            {/*<DialogContentText>
+            {/* <DialogContentText>
             Описание
-          </DialogContentText>
-*/}
+          </DialogContentText> */}
+
 
             <TextField
               id="filled-select-level"
@@ -152,6 +155,7 @@ class FormDialog extends React.Component {
               margin="normal"
               variant="filled"
             >
+
               {currencies.map(option => (
                 <MenuItem key={option.value} value={option.value}>
                   {option.label}
@@ -168,6 +172,7 @@ class FormDialog extends React.Component {
               fullWidth
               onChange={this.handleChange('descr')}
             />
+            
           </DialogContent>
 
           <DialogActions>
