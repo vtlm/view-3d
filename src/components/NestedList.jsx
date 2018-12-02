@@ -17,8 +17,9 @@ import PlaceIcon from "@material-ui/icons/Place";
 
 import { observer } from "mobx-react";
 import { toJS } from "mobx";
-import { appState } from "./AppState";
+import { appState,spaState, spaStateObj } from "./AppState";
 import FormDialog, {styles as stylesD} from './FormDialog'
+import {db} from './ThreeView'
 
 const styles = theme => ({
   root: {
@@ -46,6 +47,7 @@ class WrapDialog extends React.Component {
         descr={appState.mark.descr ? appState.mark.descr : ""}
         classes={styles}
         handleOK={this.props.handleOK}
+        handleUpdate={this.props.handleUpdate}
         handleRemove={this.props.handleRemove}
         handleCancel={this.props.handleCancel}
       />
@@ -110,6 +112,62 @@ class NestedList extends React.Component {
       ));
   };
 
+
+  updateMark = state => {
+    // appState.points[appState.selectedObject].push(this.tempMark.name);
+    // // appState.open=true
+    // let obj = {
+    //   owner_id: client.auth.user.id,
+    //   type: "point",
+    //   parent: this.currObj.name,
+    //   name: state.name,
+    //   level: state.level,
+    //   descr: state.descr,
+    //   pos: {
+    //     x: this.tempMark.position.x,
+    //     y: this.tempMark.position.y,
+    //     z: this.tempMark.position.z
+    //   }
+    // };
+    // appState.pts.push(obj);
+    // spaStateObj.pts.push(obj);
+    let xPos = toJS(appState.mark.pos).x;
+    let obj = appState.pts.find(x => x.pos.x == xPos);
+    obj = Object.assign(obj, {
+      name: state.name,
+      level: state.level,
+      descr: state.descr
+    });
+    obj = spaStateObj.pts.find(x => x.pos.x == xPos);
+
+    obj = Object.assign(obj, {
+      name: state.name,
+      level: state.level,
+      descr: state.descr
+    });
+  }
+
+
+  removeMark = () => {
+    let xPos = toJS(appState.mark.pos).x;
+    let obj = appState.pts.find(x => x.pos.x == xPos);
+    let i = appState.pts.indexOf(obj);
+    appState.pts.splice(i, 1);
+    spaState.pts.splice(i, 1);
+    spaStateObj.pts.splice(i, 1);
+
+    console.log("remove", this.currObj, i, toJS(appState.mark.pos).x);
+    this.currObj.parent.remove(this.currObj);
+
+    db.collection("comments")
+      .deleteOne({ pos: appState.mark.pos })
+      .then(result => {
+        // result.deletedCount === 1
+        return result;
+      });
+  };
+
+
   render() {
     const { classes } = this.props;
     console.log("rNL", toJS(this.props.appState));
@@ -137,12 +195,13 @@ class NestedList extends React.Component {
 
 
 
-        <WrapDialog
+        {/* <WrapDialog
           appState={appState}
           handleOK={()=>{appState.openEdit=false}}
-          handleRemove={()=>{appState.openEdit=false}}
+          handleUpdate={this.updateMark}
+          handleRemove={()=>{appState.openEdit=false;this.removeMark()}}
           handleCancel={()=>{appState.openEdit=false}}
-        />
+        /> */}
 
 
           {/* <FormDialog

@@ -3,7 +3,7 @@ import * as THREE from "three";
 import OrbitControls from "orbit-controls-es6";
 import GLTFLoader from "three-gltf-loader";
 
-import {Tree} from 'antd'
+import { Tree } from "antd";
 import "antd/dist/antd.css";
 
 import {
@@ -15,19 +15,18 @@ import {
 import { observable, toJS } from "mobx";
 import { observer } from "mobx-react";
 
-import { appState, floatHintState, spaState,spaStateObj } from "./AppState";
+import { appState, floatHintState, spaState, spaStateObj } from "./AppState";
 
 // import DataView from "./DataView";
 import Float from "./FloatHint";
 import FormDialog, { styles } from "./FormDialog";
-import NestedList from './NestedList'
-import MobxTst from './MobxTst'
+import NestedList from "./NestedList";
+import MobxTst from "./MobxTst";
 
 import parms from "../parms";
 import FloatHint from "./FloatHint";
 
 const TreeNode = Tree.TreeNode;
-
 
 const client = Stitch.initializeDefaultAppClient("test1-jwipq");
 client.auth.loginWithCredential(new AnonymousCredential());
@@ -424,7 +423,6 @@ class ThreeCanvas {
         // this.intersects.length=[]
         if (this.intersects.length > 0) {
           if (INTERSECTED != this.intersects[0].object) {
- 
             if (INTERSECTED)
               INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
             INTERSECTED = this.intersects[0].object;
@@ -435,7 +433,7 @@ class ThreeCanvas {
               floatHintState.visible = true;
               floatHintState.left = this.mouseR.x + "px";
               floatHintState.top = this.mouseR.y + "px";
-  
+
               // this.divElemMark.style.left = this.mouseR.x + "px";
               // this.divElemMark.style.top = this.mouseR.y + "px";
               // console.log(this.divElemMark)
@@ -445,8 +443,10 @@ class ThreeCanvas {
               );
               appState.pt = pt;
               appState.mark = pt;
-              console.log("sel mark",// appState.mark, pt,
-              INTERSECTED);
+              console.log(
+                "sel mark", // appState.mark, pt,
+                INTERSECTED
+              );
               // let str = pt.name ? pt.name : "noName";
               // str += "<br>";
               // str += pt.level ? pt.level : "noLevel";
@@ -487,7 +487,7 @@ class ThreeCanvas {
           //   INTERSECTED = this.intersects[0].object
           //   INTERSECTED.currentHex = INTERSECTED.material.color.getHex()
           //   INTERSECTED.material.color.setHex(0xff0000)
-            // console.log(this.intersects)
+          // console.log(this.intersects)
           //   // console.log(this.intersects[0].point)
           // }
           this.cube.visible = true;
@@ -609,7 +609,7 @@ class ThreeCanvas {
         // console.log('click!', this.intersects[0].point, cube.position)
         appState.open = true;
         // this.intersects=[]
-        console.log('Added:',this.tempMark.name)
+        console.log("Added:", this.tempMark.name);
       }
     }
   };
@@ -668,6 +668,55 @@ class ThreeCanvas {
     appState.open = false;
   };
 
+  updateMark = state => {
+    // appState.points[appState.selectedObject].push(this.tempMark.name);
+    // // appState.open=true
+    // let obj = {
+    //   owner_id: client.auth.user.id,
+    //   type: "point",
+    //   parent: this.currObj.name,
+    //   name: state.name,
+    //   level: state.level,
+    //   descr: state.descr,
+    //   pos: {
+    //     x: this.tempMark.position.x,
+    //     y: this.tempMark.position.y,
+    //     z: this.tempMark.position.z
+    //   }
+    // };
+    // appState.pts.push(obj);
+    // spaStateObj.pts.push(obj);
+    let xPos = toJS(appState.mark.pos).x;
+    let obj = appState.pts.find(x => x.pos.x == xPos);
+    obj = Object.assign(obj, {
+      name: state.name,
+      level: state.level,
+      descr: state.descr
+    });
+    obj = spaStateObj.pts.find(x => x.pos.x == xPos);
+
+    obj = Object.assign(obj, {
+      name: state.name,
+      level: state.level,
+      descr: state.descr
+    });
+
+    db.collection("comments")
+      .updateOne(
+        { pos: appState.mark.pos },
+        {
+          $set: {
+            name: state.name,
+            level: state.level,
+            descr: state.descr
+          }
+        }
+      )
+      .then(displayComments);
+    console.log("Mark updated");
+    appState.open = false;
+  };
+
   removeMark = () => {
     let xPos = toJS(appState.mark.pos).x;
     let obj = appState.pts.find(x => x.pos.x == xPos);
@@ -697,20 +746,21 @@ class ThreeCanvas {
 @observer
 class WrapDialog extends Component {
   render() {
-    console.log('rWD',toJS(appState.mark))
+    console.log("rWD", toJS(appState.mark));
     return (
       <FormDialog
         // appState={appState}
         dKey={"open"}
         name={appState.mark.name ? appState.mark.name : ""}
         // level={appState.mark ? toJS(appState.mark).level : 'mid'}
-        level={appState.mark.level ? appState.mark.level : 'mid'}
+        level={appState.mark.level ? appState.mark.level : "mid"}
         descr={appState.mark.descr ? appState.mark.descr : ""}
         // name={"mark"}
         // level={"mid"}
         // descr={"description"}
         classes={styles}
         handleOK={this.props.handleOK}
+        handleUpdate={this.props.handleUpdate}
         handleRemove={this.props.handleRemove}
         handleCancel={this.props.handleCancel}
       />
@@ -719,70 +769,63 @@ class WrapDialog extends Component {
 }
 
 @observer
-class WrapNestedList extends Component{
-  render(){
-    console.log('rWNL',toJS(this.props.appState))
-    return(
-      <NestedList appState={this.props.appState} />
-    )
+class WrapNestedList extends Component {
+  render() {
+    console.log("rWNL", toJS(this.props.appState));
+    return <NestedList appState={this.props.appState} />;
   }
 }
 
-let arr=observable([])
+let arr = observable([]);
 // let observ={
 //   @observable arr=[]
 // }
 
-setInterval(()=>{arr.push(200)
-  appState.pts.push(40)
-  spaState.pts.push({name:'cvb'})
-  a1.i+=1
+setInterval(() => {
+  arr.push(200);
+  appState.pts.push(40);
+  spaState.pts.push({ name: "cvb" });
+  a1.i += 1;
   // console.log(toJS(spaState))
-},1000)
-
+}, 1000);
 
 @observer
-class ViewPts extends Component{
-
-  createNode=x=>{
+class ViewPts extends Component {
+  createNode = x => {
     return (
       <TreeNode title={x} key={x}>
-        {this.props.spaState.pts.map(xx=><TreeNode title={xx.name} />)}
+        {this.props.spaState.pts.map(xx => (
+          <TreeNode title={xx.name} />
+        ))}
       </TreeNode>
-    )
-  }
+    );
+  };
 
-  render(){
-
+  render() {
     // return(
     //   <div>
     //     {this.props.a1.i}
     //   </div>
     // )
-    console.log('rVP',toJS(this.props.spaState))
-    return(
-      this.props.spaState.pts?
+    console.log("rVP", toJS(this.props.spaState));
+    return this.props.spaState.pts ? (
       <div>
         ok
         <Tree defaultExpandAll>
-          {this.props.spaState.objects.map(x=>this.createNode(x))}
-        
+          {this.props.spaState.objects.map(x => this.createNode(x))}
         </Tree>
-        </div>
-        :null
-      
-    )
+      </div>
+    ) : null;
   }
 }
 
-class A1{
-  i=0
+class A1 {
+  i = 0;
 }
 
-var a1=observable({
-  i:0
-})//new A1()
-
+var a1 = observable({
+  i: 0
+}); //new A1()
 
 @observer
 class ThreeView extends Component {
@@ -855,11 +898,9 @@ class ThreeView extends Component {
             // lineHeight: '40px'
           }}
         >
-        
-        {/* <ViewPts spaState={spaStateObj}/> */}
+          {/* <ViewPts spaState={spaStateObj}/> */}
 
-          <WrapNestedList appState={spaStateObj}/>  
-
+          <WrapNestedList appState={spaStateObj} />
 
           {/* <DataView appState={appState} pts={appState.pts}/>
           <WrapNestedList appState={appState} pts={appState.pts}/> */}
@@ -868,6 +909,7 @@ class ThreeView extends Component {
         <WrapDialog
           // appState={appState}
           handleOK={this.tc.confirmMark}
+          handleUpdate={this.tc.updateMark}
           handleRemove={this.tc.removeMark}
           handleCancel={this.tc.rejectMark}
         />
@@ -908,5 +950,5 @@ class ThreeView extends Component {
     );
   };
 }
-
+export { db };
 export default ThreeView;

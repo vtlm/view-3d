@@ -72,7 +72,7 @@ class FormDialog extends React.Component {
   }
 
   handleChange = name => event => {
-    console.log('onChange', name)
+    console.log('onChange FD', name)
     console.log(event.target, event.target.value)
     this.setState({ [name]: event.target.value })
     console.log(this.state)
@@ -92,6 +92,13 @@ class FormDialog extends React.Component {
   handleRemove = () => {
     // console.log(this.state)
     this.props.handleRemove(this.state)
+    appState[this.props.dKey] = false
+    appState.mouseInPanel=false
+  }
+
+  handleUpdate = () => {
+    // console.log(this.state)
+    this.props.handleUpdate(this.state)
     appState[this.props.dKey] = false
     appState.mouseInPanel=false
   }
@@ -185,8 +192,14 @@ class FormDialog extends React.Component {
             </Button>
             :null
             }
+            {this.props.handleUpdate?
+            <Button onClick={this.handleUpdate} color="primary">
+              Применить
+            </Button>
+            :null
+            }
             <Button onClick={this.handleOK} color="primary">
-              Добавить
+              OK
             </Button>
           </DialogActions>
         </Dialog>
