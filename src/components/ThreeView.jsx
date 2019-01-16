@@ -6,67 +6,22 @@ import GLTFLoader from "three-gltf-loader";
 import { Tree } from "antd";
 import "antd/dist/antd.css";
 
-import {
-  Stitch,
-  AnonymousCredential,
-  RemoteMongoClient
-} from "mongodb-stitch-browser-sdk";
-
 import { observable, toJS } from "mobx";
 import { observer } from "mobx-react";
 
 import { appState, floatHintState, spaState, spaStateObj } from "./AppState";
 
 // import DataView from "./DataView";
-import Float from "./FloatHint";
+// import Float from "./FloatHint";
 import FormDialog, { styles } from "./FormDialog";
 import NestedList from "./NestedList";
-import MobxTst from "./MobxTst";
+// import MobxTst from "./MobxTst";
 
-import parms from "../parms";
 import FloatHint from "./FloatHint";
 
+import db,{client} from "../db";
+
 const TreeNode = Tree.TreeNode;
-
-const client = Stitch.initializeDefaultAppClient("test1-jwipq");
-client.auth.loginWithCredential(new AnonymousCredential());
-// Get a MongoDB Service Client
-const mongodb = client.getServiceClient(
-  RemoteMongoClient.factory,
-  "mongodb-atlas"
-);
-// Get a reference to the blog database
-const db = mongodb.db("blog");
-
-// db.collection('comments').deleteMany({})
-
-function displayComments() {
-  db.collection("comments")
-    .find({}, { limit: 1000 })
-    .asArray()
-    .then(docs => console.log(docs));
-  // db.collection("comments")
-  //   .find({}, { limit: 1000 })
-  //   .asArray()
-  //   .then(docs => docs.map(doc => `<div>${doc.owner_id},${doc.comment}</div>`))
-  //   .then(comments => document.getElementById("comments").innerHTML = comments)
-}
-
-function displayCommentsOnLoad() {
-  client.auth
-    .loginWithCredential(new stitch.AnonymousCredential())
-    .then(displayComments)
-    .catch(console.error);
-}
-
-function addComment() {
-  const newComment = document.getElementById("new_comment");
-  console.log("add comment", client.auth.user.id);
-  db.collection("comments")
-    .insertOne({ owner_id: client.auth.user.id, comment: newComment.value })
-    .then(displayComments);
-  newComment.value = "";
-}
 
 var INTERSECTED;
 var ptNumb = 1;
@@ -246,9 +201,9 @@ class ThreeCanvas {
     scene.add(dirLight);
 
     // console.log('areas', parms.areas)
-    Object.values(parms.areas).forEach(x =>
-      this.scene.add(this.createPlane(x))
-    );
+    // Object.values(parms.areas).forEach(x =>
+    //   this.scene.add(this.createPlane(x))
+    // );
 
     this.materialBlue = new THREE.MeshBasicMaterial({
       color: 0x0000ff,
@@ -286,7 +241,6 @@ class ThreeCanvas {
     loader.load(
       // resource URL
       "Girder_XBox.gltf",
-      // 'bm.gltf',
       // called when the resource is loaded
       gltf => {
         // this.targetNode.add( gltf.scene );
@@ -578,6 +532,7 @@ class ThreeCanvas {
         } else {
           // displayComments();
           // this.targetNode.visible=false
+          appState.mark={}
           this.scene.remove(this.targetNode);
           this.scene.remove(this.oNode);
           this.mapViewMode = false;
@@ -632,6 +587,8 @@ class ThreeCanvas {
 
   confirmMark = state => {
     appState.points[appState.selectedObject].push(this.tempMark.name);
+    spaStateObj.cnt+=1
+
     // appState.open=true
     let obj = {
       owner_id: client.auth.user.id,
@@ -663,7 +620,7 @@ class ThreeCanvas {
           z: this.tempMark.position.z
         }
       })
-      .then(displayComments);
+      // .then(displayComments);
     console.log("Mark Confirmed");
     appState.open = false;
   };
@@ -687,12 +644,14 @@ class ThreeCanvas {
     // appState.pts.push(obj);
     // spaStateObj.pts.push(obj);
     let xPos = toJS(appState.mark.pos).x;
+
     let obj = appState.pts.find(x => x.pos.x == xPos);
     obj = Object.assign(obj, {
       name: state.name,
       level: state.level,
       descr: state.descr
     });
+
     obj = spaStateObj.pts.find(x => x.pos.x == xPos);
 
     obj = Object.assign(obj, {
@@ -712,7 +671,7 @@ class ThreeCanvas {
           }
         }
       )
-      .then(displayComments);
+      // .then(displayComments);
     console.log("Mark updated");
     appState.open = false;
   };
@@ -747,14 +706,15 @@ class ThreeCanvas {
 class WrapDialog extends Component {
   render() {
     console.log("rWD", toJS(appState.mark));
+    // if(!spaStateObj.cnt)spaStateObj.cnt=0
     return (
       <FormDialog
         // appState={appState}
         dKey={"open"}
-        name={appState.mark.name ? appState.mark.name : ""}
+        name={appState.mark.name ? appState.mark.name : "Name_"+spaStateObj.cnt}
         // level={appState.mark ? toJS(appState.mark).level : 'mid'}
         level={appState.mark.level ? appState.mark.level : "mid"}
-        descr={appState.mark.descr ? appState.mark.descr : ""}
+        descr={appState.mark.descr ? appState.mark.descr : "Comment_"+spaStateObj.cnt}
         // name={"mark"}
         // level={"mid"}
         // descr={"description"}
@@ -775,57 +735,6 @@ class WrapNestedList extends Component {
     return <NestedList appState={this.props.appState} />;
   }
 }
-
-let arr = observable([]);
-// let observ={
-//   @observable arr=[]
-// }
-
-setInterval(() => {
-  arr.push(200);
-  appState.pts.push(40);
-  spaState.pts.push({ name: "cvb" });
-  a1.i += 1;
-  // console.log(toJS(spaState))
-}, 1000);
-
-@observer
-class ViewPts extends Component {
-  createNode = x => {
-    return (
-      <TreeNode title={x} key={x}>
-        {this.props.spaState.pts.map(xx => (
-          <TreeNode title={xx.name} />
-        ))}
-      </TreeNode>
-    );
-  };
-
-  render() {
-    // return(
-    //   <div>
-    //     {this.props.a1.i}
-    //   </div>
-    // )
-    console.log("rVP", toJS(this.props.spaState));
-    return this.props.spaState.pts ? (
-      <div>
-        ok
-        <Tree defaultExpandAll>
-          {this.props.spaState.objects.map(x => this.createNode(x))}
-        </Tree>
-      </div>
-    ) : null;
-  }
-}
-
-class A1 {
-  i = 0;
-}
-
-var a1 = observable({
-  i: 0
-}); //new A1()
 
 @observer
 class ThreeView extends Component {

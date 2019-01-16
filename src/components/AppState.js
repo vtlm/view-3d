@@ -8,7 +8,8 @@ class SpaState{
 
 var spaStateObj=observable({
   pts:null,
-  objects:[]
+  objects:[],
+  cnt:1
 })
 
 var spaState=new SpaState()

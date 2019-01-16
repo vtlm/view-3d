@@ -52,7 +52,9 @@ class FormDialog extends React.Component {
     descr: 'Описание',
     age: '',
     multiline: 'Controlled',
-    level: 'undef'
+    level: 'undef',
+    prevPropsName:this.props.name,
+    prevPropsDescr:this.props.descr
   }
 
   static getDerivedStateFromProps(props, state){
@@ -60,7 +62,9 @@ class FormDialog extends React.Component {
     if(!appState[props.dKey])
       return null
     if(state.level === 'undef'){
+      state.name=props.name
       state.level=props.level
+      state.descr=props.descr
       return state
     }
     return null

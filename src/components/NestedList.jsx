@@ -153,7 +153,7 @@ class NestedList extends React.Component {
     let obj = appState.pts.find(x => x.pos.x == xPos);
     let i = appState.pts.indexOf(obj);
     appState.pts.splice(i, 1);
-    spaState.pts.splice(i, 1);
+    // spaState.pts.splice(i, 1);
     spaStateObj.pts.splice(i, 1);
 
     console.log("remove", this.currObj, i, toJS(appState.mark.pos).x);
@@ -195,13 +195,13 @@ class NestedList extends React.Component {
 
 
 
-        {/* <WrapDialog
+        <WrapDialog
           appState={appState}
           handleOK={()=>{appState.openEdit=false}}
           handleUpdate={this.updateMark}
           handleRemove={()=>{appState.openEdit=false;this.removeMark()}}
           handleCancel={()=>{appState.openEdit=false}}
-        /> */}
+        />
 
 
           {/* <FormDialog
